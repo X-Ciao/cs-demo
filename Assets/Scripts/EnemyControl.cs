@@ -1,11 +1,12 @@
 using System.Collections; // 使用协程
 using UnityEngine; // Unity引擎核心库
+using UnityEngine.EventSystems;
 using UnityEngine.UI; // UI系统
 
 public class EnemyControl : MonoBehaviour
 {
     // 敌人移动分组
-    public float moveSpeed = 2f; // 移动速度
+    public float moveSpeed = 500f; // 移动速度
     public float roamRange = 5f; // 巡逻范围半径
     public float chaseRange = 8f; // 追逐玩家的范围
     public float rotationSpeed = 5f; // 旋转速度
@@ -36,6 +37,9 @@ public class EnemyControl : MonoBehaviour
     // 血条旋转控制
     private Quaternion healthBarRotation; // 血条初始旋转值
 
+    //传递移动方向
+    private Vector3 moveDirection;
+
     // 敌人状态枚举
     private enum EnemyState
     {
@@ -54,19 +58,6 @@ public class EnemyControl : MonoBehaviour
         enemyCollider = GetComponent<Collider>();
         rb = GetComponent<Rigidbody>();
 
-        //// 如果缺少组件，自动添加
-        //if (rb == null)
-        //{
-        //    Debug.LogWarning($"Rigidbody missing on {gameObject.name}, adding one.");
-        //    rb = gameObject.AddComponent<Rigidbody>();
-
-        //    // 配置默认物理属性
-        //    rb.mass = 1f;
-        //    rb.drag = 0f;
-        //    rb.angularDrag = 0.05f;
-        //    rb.useGravity = false; // 根据需求调整
-        //    rb.isKinematic = false;
-        //}
 
         // 初始化位置和生命值
         startPos = transform.position;
@@ -108,8 +99,9 @@ public class EnemyControl : MonoBehaviour
                     break;
                 }
 
-                // 向目标点移动
-                MoveToTarget();
+
+                moveDirection = (targetPos - transform.position).normalized;
+
                 // 检查是否到达目标点
                 if (Vector3.Distance(transform.position, targetPos) < 0.5f)
                 {
@@ -129,8 +121,9 @@ public class EnemyControl : MonoBehaviour
                     break;
                 }
 
-                // 追逐玩家
-                ChasePlayer();
+
+                moveDirection = (player.position - transform.position).normalized;
+                moveDirection.y = 0;
                 break;
         }
     }
@@ -142,8 +135,8 @@ public class EnemyControl : MonoBehaviour
         {
             // 根据状态确定目标方向
             Vector3 targetDirection = currentState == EnemyState.Chasing ?
-                (player.position - transform.position).normalized :
-                (targetPos - transform.position).normalized;
+                new Vector3(player.position.x - transform.position.x, 0, player.position.z - transform.position.z).normalized :
+                new Vector3(targetPos.x - transform.position.x, 0, targetPos.z - transform.position.z).normalized;
 
             // 确保目标方向有效
             if (targetDirection != Vector3.zero)
@@ -153,6 +146,15 @@ public class EnemyControl : MonoBehaviour
                 // 平滑旋转到目标方向
                 rb.rotation = Quaternion.Slerp(rb.rotation, targetRotation, rotationSpeed * Time.deltaTime);
             }
+        }
+
+        // 位置更新 
+        if (!isDead && moveDirection != Vector3.zero)
+        {
+
+            // 执行物理移动
+            Vector3 moveOffset = moveDirection * moveSpeed * Time.fixedDeltaTime;
+            rb.MovePosition(rb.position + moveOffset);
         }
     }
 
@@ -164,24 +166,6 @@ public class EnemyControl : MonoBehaviour
             // 保持血条始终面向摄像机
             healthBarCanvas.transform.rotation = Camera.main.transform.rotation;
         }
-    }
-
-    // 向目标点移动
-    void MoveToTarget()
-    {
-        // 计算移动方向
-        Vector3 moveDirection = (targetPos - transform.position).normalized;
-        // 使用刚体移动（物理安全）
-        rb.MovePosition(rb.position + moveDirection * moveSpeed * Time.deltaTime);
-    }
-
-    // 追逐玩家
-    void ChasePlayer()
-    {
-        // 计算朝向玩家的方向
-        Vector3 moveDirection = (player.position - transform.position).normalized;
-        // 向玩家移动
-        rb.MovePosition(rb.position + moveDirection * moveSpeed * Time.deltaTime);
     }
 
     // 设置新的巡逻目标点
@@ -262,8 +246,8 @@ public class EnemyControl : MonoBehaviour
         if (healthBarCanvas != null)
             healthBarCanvas.gameObject.SetActive(false);
 
-        //// 通知游戏管理器敌人被击败
-        //GameManager.Instance.EnemyKilled(scoreValue);
+        // 通知游戏管理器敌人被击败
+        GameManager.Instance.EnemyKilled(scoreValue);
 
         // 开始复活协程
         StartCoroutine(Respawn());
