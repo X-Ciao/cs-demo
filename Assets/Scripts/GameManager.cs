@@ -1,6 +1,7 @@
 using UnityEngine;
 using TMPro;
-using System.Collections; 
+using System.Collections;
+using System.Collections.Generic;
 
 public class GameManager : MonoBehaviour
 {
@@ -17,11 +18,30 @@ public class GameManager : MonoBehaviour
     public TMP_Text scoreText; // 分数文本
     public GameObject gameOverPanel; // 游戏结束面板
 
+    //结算UI元素
+    public GameObject resultPanel; // 结算面板
+    public TMP_Text finalScoreText; // 最终得分显示
+    public TMP_InputField nameInputField; // 玩家名字输入框
+    public TMP_Text[] rankEntries = new TMP_Text[3]; // 排行榜前三名显示
+
     // 游戏状态
     private float currentTime; // 当前剩余时间
     private int score; // 当前分数
     private int activeEnemies; // 当前活动敌人数
     private bool isGameActive = true; // 游戏是否进行中
+
+
+    // 排行榜数据结构
+    [System.Serializable]
+    public class RankEntry
+    {
+        public string playerName;
+        public int score;
+    }
+
+    private List<RankEntry> rankings = new List<RankEntry>();
+    private const string RankingsKey = "TopRankings"; // 存储键名
+
 
     void Awake()
     {
@@ -42,6 +62,9 @@ public class GameManager : MonoBehaviour
 
         // 生成初始敌人
         SpawnEnemies(initialEnemyCount);
+
+        // 加载排行榜
+        LoadRankings();
     }
 
     void Update()
@@ -67,28 +90,28 @@ public class GameManager : MonoBehaviour
     {
         // 增加分数
         score += value;
-        // 减少活动敌人数
-        activeEnemies--;
+        //// 减少活动敌人数
+        //activeEnemies--;
         // 更新UI
         UpdateUI();
 
-        // 延迟生成新敌人
-        StartCoroutine(RespawnEnemy());
+        //// 延迟生成新敌人
+        //StartCoroutine(RespawnEnemy());
     }
 
     // 重新生成敌人的协程
-    IEnumerator RespawnEnemy()
-    {
-        // 随机等待3-7秒
-        yield return new WaitForSeconds(Random.Range(3f, 7f));
-        // 生成一个新敌人
-        SpawnEnemy();
-    }
+    //IEnumerator RespawnEnemy()
+    //{
+    //    // 随机等待3-7秒
+    //    yield return new WaitForSeconds(Random.Range(3f, 7f));
+    //    // 生成一个新敌人
+    //    SpawnEnemy();
+    //}
 
     // 生成指定数量的敌人
     void SpawnEnemies(int count)
     {
-        for (int i = 0; i < count; i++)
+        for (int i = 1; i < count; i++)
         {
             SpawnEnemy();
         }
@@ -112,8 +135,8 @@ public class GameManager : MonoBehaviour
             enemyControl.startPos = spawnPoint.position;
         }
 
-        // 增加活动敌人数
-        activeEnemies++;
+        //// 增加活动敌人数
+        //activeEnemies++;
     }
 
     // 更新UI显示
@@ -129,7 +152,112 @@ public class GameManager : MonoBehaviour
     {
         // 设置游戏状态为非活动
         isGameActive = false;
+
+        isGameActive = false;
+
+        // 隐藏游戏面板，显示结算面板
+        gameOverPanel.SetActive(false);
+        resultPanel.SetActive(true);
+
+        // 显示最终得分
+        finalScoreText.text = $"Final Score: {score}";
+
+        // 清空输入框
+        nameInputField.text = "";
     }
 
+    //提交分数到排行榜
+    public void SubmitScore()
+    {
+        string playerName = nameInputField.text;
 
+        // 如果名字为空，使用默认名
+        if (string.IsNullOrWhiteSpace(playerName))
+            playerName = "Player";
+
+        // 添加到排行榜
+        AddToRankings(playerName, score);
+
+        // 保存排行榜
+        SaveRankings();
+
+        // 更新显示
+        ShowRankings();
+    }
+
+    // 添加分数到排行榜
+    void AddToRankings(string name, int newScore)
+    {
+        // 创建新条目
+        RankEntry newEntry = new RankEntry
+        {
+            playerName = name,
+            score = newScore
+        };
+
+        // 添加到列表
+        rankings.Add(newEntry);
+
+        // 按分数降序排序
+        rankings.Sort((a, b) => b.score.CompareTo(a.score));
+
+        // 只保留前三名
+        if (rankings.Count > 3)
+        {
+            rankings = rankings.GetRange(0, 3);
+        }
+    }
+
+    // 保存排行榜数据
+    void SaveRankings()
+    {
+        // 将列表转换为JSON
+        string json = JsonUtility.ToJson(new RankingsWrapper { entries = rankings });
+
+        // 保存到PlayerPrefs
+        PlayerPrefs.SetString(RankingsKey, json);
+        PlayerPrefs.Save();
+    }
+
+    // 加载排行榜数据
+    void LoadRankings()
+    {
+        if (PlayerPrefs.HasKey(RankingsKey))
+        {
+            string json = PlayerPrefs.GetString(RankingsKey);
+            RankingsWrapper wrapper = JsonUtility.FromJson<RankingsWrapper>(json);
+            rankings = wrapper.entries;
+        }
+        else
+        {
+            // 没有数据时创建空列表
+            rankings = new List<RankEntry>();
+        }
+
+        // 更新UI
+        ShowRankings();
+    }
+
+    // 在UI上显示排行榜
+    void ShowRankings()
+    {
+        for (int i = 0; i < rankEntries.Length; i++)
+        {
+            if (i < rankings.Count)
+            {
+                rankEntries[i].text = $"{i + 1}. {rankings[i].playerName} - {rankings[i].score}";
+            }
+            else
+            {
+                rankEntries[i].text = $"{i + 1}. ---";
+            }
+        }
+    }
+
+    // 包装类用于JSON序列化
+    [System.Serializable]
+    private class RankingsWrapper
+    {
+        public List<RankEntry> entries;
+    }
 }
