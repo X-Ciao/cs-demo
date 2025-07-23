@@ -2,13 +2,15 @@ using UnityEngine;
 using TMPro;
 using System.Collections;
 using System.Collections.Generic;
+using UnityEngine.SceneManagement;
+using UnityEngine.EventSystems;
 
 public class GameManager : MonoBehaviour
 {
     public static GameManager Instance; // 单例实例
 
      // 游戏设置分组
-    public float gameDuration = 60f; // 游戏总时长（秒）
+    public float gameDuration = 10f; // 游戏总时长（秒）
     public int initialEnemyCount = 5; // 初始敌人数
     public GameObject enemyPrefab; // 敌人预制体
     public Transform[] spawnPoints; // 敌人出生点数组
@@ -16,7 +18,7 @@ public class GameManager : MonoBehaviour
     // UI引用分组
     public TMP_Text timerText; // 计时器文本
     public TMP_Text scoreText; // 分数文本
-    public GameObject gameOverPanel; // 游戏结束面板
+    //public GameObject gameOverPanel; // 游戏结束面板
 
     //结算UI元素
     public GameObject resultPanel; // 结算面板
@@ -29,6 +31,8 @@ public class GameManager : MonoBehaviour
     private int score; // 当前分数
     private int activeEnemies; // 当前活动敌人数
     private bool isGameActive = true; // 游戏是否进行中
+
+
 
 
     // 排行榜数据结构
@@ -63,8 +67,17 @@ public class GameManager : MonoBehaviour
         // 生成初始敌人
         SpawnEnemies(initialEnemyCount);
 
+        //隐藏结算界面
+        if (resultPanel != null)
+            resultPanel.SetActive(false);
+
         // 加载排行榜
         LoadRankings();
+
+
+        // 游戏开始时锁定鼠标
+        Cursor.lockState = CursorLockMode.Locked;
+        Cursor.visible = false;
     }
 
     void Update()
@@ -90,23 +103,14 @@ public class GameManager : MonoBehaviour
     {
         // 增加分数
         score += value;
-        //// 减少活动敌人数
-        //activeEnemies--;
+
         // 更新UI
         UpdateUI();
 
-        //// 延迟生成新敌人
-        //StartCoroutine(RespawnEnemy());
+
     }
 
-    // 重新生成敌人的协程
-    //IEnumerator RespawnEnemy()
-    //{
-    //    // 随机等待3-7秒
-    //    yield return new WaitForSeconds(Random.Range(3f, 7f));
-    //    // 生成一个新敌人
-    //    SpawnEnemy();
-    //}
+
 
     // 生成指定数量的敌人
     void SpawnEnemies(int count)
@@ -153,10 +157,8 @@ public class GameManager : MonoBehaviour
         // 设置游戏状态为非活动
         isGameActive = false;
 
-        isGameActive = false;
-
         // 隐藏游戏面板，显示结算面板
-        gameOverPanel.SetActive(false);
+        //gameOverPanel.SetActive(false);
         resultPanel.SetActive(true);
 
         // 显示最终得分
@@ -164,6 +166,72 @@ public class GameManager : MonoBehaviour
 
         // 清空输入框
         nameInputField.text = "";
+
+        // === 停止游戏活动 ===
+        StopAllCoroutines();
+        DisablePlayer();
+        DisableEnemies();
+
+        // 解锁鼠标用于UI操作
+        Cursor.lockState = CursorLockMode.None;
+        Cursor.visible = true;
+
+        // 切换到UI控制模式
+        EventSystem.current.SetSelectedGameObject(nameInputField.gameObject);
+    }
+
+    // 禁用玩家控制
+    void DisablePlayer()
+    {
+        GameObject player = GameObject.FindGameObjectWithTag("Player");
+        if (player != null)
+        {
+            // 完全禁用玩家控制脚本
+            MonoBehaviour playerControl = player.GetComponent<PlayerControl>();
+            if (playerControl != null)
+            {
+                playerControl.enabled = false;
+                // 同时禁用物理运动
+                Rigidbody rb = player.GetComponent<Rigidbody>();
+                if (rb != null)
+                {
+                    rb.velocity = Vector3.zero;
+                    rb.angularVelocity = Vector3.zero;
+                    rb.isKinematic = true; // 完全停止物理模拟
+                }
+            }
+
+            // 禁用枪械控制脚本
+            MonoBehaviour gunControl = player.GetComponent<GunControl>();
+            if (gunControl != null) gunControl.enabled = false;
+        }
+    }
+
+    // 禁用所有敌人
+    void DisableEnemies()
+    {
+        GameObject[] enemies = GameObject.FindGameObjectsWithTag("Enemy");
+        foreach (GameObject enemy in enemies)
+        {
+            EnemyControl enemyControl = enemy.GetComponent<EnemyControl>();
+        if (enemyControl != null)
+        {
+            enemyControl.enabled = false;
+
+            // 完全停止敌人的物理运动
+            Rigidbody rb = enemy.GetComponent<Rigidbody>();
+            if (rb != null)
+            {
+                rb.velocity = Vector3.zero;
+                rb.angularVelocity = Vector3.zero;
+                rb.isKinematic = true;
+            }
+        }
+
+        // 禁用碰撞体
+        Collider enemyCollider = enemy.GetComponent<Collider>();
+        if (enemyCollider != null) enemyCollider.enabled = false;
+        }
     }
 
     //提交分数到排行榜
@@ -181,8 +249,8 @@ public class GameManager : MonoBehaviour
         // 保存排行榜
         SaveRankings();
 
-        // 更新显示
-        ShowRankings();
+        // 跳转场景
+        ShowLeaderboard();
     }
 
     // 添加分数到排行榜
@@ -254,9 +322,19 @@ public class GameManager : MonoBehaviour
         }
     }
 
+   
+
+    //跳转场景
+    public void ShowLeaderboard()
+    {
+
+        // 加载排行榜场景
+        SceneManager.LoadScene("LeaderboardScene");
+    }
+
     // 包装类用于JSON序列化
     [System.Serializable]
-    private class RankingsWrapper
+    public class RankingsWrapper
     {
         public List<RankEntry> entries;
     }

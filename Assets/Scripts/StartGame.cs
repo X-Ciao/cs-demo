@@ -11,6 +11,10 @@ public class StartGame : MonoBehaviour
     //获取组件
     private Image m_progress;
 
+    // 场景索引常量
+    private const int GAME_SCENE_INDEX = 1;    //游戏场景索引
+    private const int RANKING_SCENE_INDEX = 2; // 排行榜场景索引
+
     private void Awake()
     {
         m_progress = ImagePr.GetComponent<Image>();
@@ -18,10 +22,15 @@ public class StartGame : MonoBehaviour
 
     public void StartScene()
     {
-        StartCoroutine(LoadScene());
+        StartCoroutine(LoadScene(GAME_SCENE_INDEX));
     }
 
-    IEnumerator LoadScene()
+    // 新增排行榜跳转方法
+    public void GoToRanking()
+    {
+        StartCoroutine(LoadScene(RANKING_SCENE_INDEX));
+    }
+    IEnumerator LoadScene(int sceneIndex)
     {
         //Image加载条的数值
         int disableProgress = 0;
@@ -32,7 +41,7 @@ public class StartGame : MonoBehaviour
         const float epsilon = 0.0001f;
 
         //切换场景
-        AsyncOperation op = SceneManager.LoadSceneAsync(1);
+        AsyncOperation op = SceneManager.LoadSceneAsync(sceneIndex);
         //暂时不切换
         op.allowSceneActivation = false;
         //进度条加载至百分之90

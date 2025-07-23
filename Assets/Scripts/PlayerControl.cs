@@ -12,6 +12,7 @@ public class PlayerControl : MonoBehaviour
     private AudioSource footPlayer;
     //是否在地面
     private bool isGround;
+   
     
     void Start()
     {
@@ -19,6 +20,7 @@ public class PlayerControl : MonoBehaviour
         rBody = GetComponent<Rigidbody>();
         //获取声音组件
         footPlayer = GetComponent<AudioSource>();
+        
     }
 
     // Update is called once per frame
@@ -48,6 +50,7 @@ public class PlayerControl : MonoBehaviour
             //没有移动，没有按下移动键，停止脚步声
             footPlayer.Stop();
         }
+
     }
    
 

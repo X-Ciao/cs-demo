@@ -144,7 +144,7 @@ public class EnemyControl : MonoBehaviour
                 // 计算目标旋转
                 Quaternion targetRotation = Quaternion.LookRotation(targetDirection);
                 // 平滑旋转到目标方向
-                rb.rotation = Quaternion.Slerp(rb.rotation, targetRotation, rotationSpeed * Time.deltaTime);
+                rb.rotation = Quaternion.Slerp(rb.rotation, targetRotation, rotationSpeed * Time.fixedDeltaTime);
             }
         }
 
@@ -156,6 +156,9 @@ public class EnemyControl : MonoBehaviour
             Vector3 moveOffset = moveDirection * moveSpeed * Time.fixedDeltaTime;
             rb.MovePosition(rb.position + moveOffset);
         }
+
+        Debug.DrawRay(transform.position, moveDirection * 2, Color.red);
+        Debug.Log($"实际速度: {rb.velocity.magnitude}");
     }
 
     // 更新血条UI
