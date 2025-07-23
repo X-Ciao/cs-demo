@@ -139,8 +139,6 @@ public class GameManager : MonoBehaviour
             enemyControl.startPos = spawnPoint.position;
         }
 
-        //// 增加活动敌人数
-        //activeEnemies++;
     }
 
     // 更新UI显示
@@ -186,24 +184,26 @@ public class GameManager : MonoBehaviour
         GameObject player = GameObject.FindGameObjectWithTag("Player");
         if (player != null)
         {
-            // 完全禁用玩家控制脚本
+            // 禁用 PlayerControl
             MonoBehaviour playerControl = player.GetComponent<PlayerControl>();
-            if (playerControl != null)
-            {
-                playerControl.enabled = false;
-                // 同时禁用物理运动
-                Rigidbody rb = player.GetComponent<Rigidbody>();
-                if (rb != null)
-                {
-                    rb.velocity = Vector3.zero;
-                    rb.angularVelocity = Vector3.zero;
-                    rb.isKinematic = true; // 完全停止物理模拟
-                }
-            }
+            if (playerControl != null) playerControl.enabled = false;
 
-            // 禁用枪械控制脚本
+            // 禁用 Head 脚本
+            Head headControl = player.GetComponentInChildren<Head>();
+            if (headControl != null) headControl.enabled = false;
+
+            // 禁用 GunControl
             MonoBehaviour gunControl = player.GetComponent<GunControl>();
             if (gunControl != null) gunControl.enabled = false;
+
+            // 停止物理运动
+            Rigidbody rb = player.GetComponent<Rigidbody>();
+            if (rb != null)
+            {
+                rb.velocity = Vector3.zero;
+                rb.angularVelocity = Vector3.zero;
+                rb.isKinematic = true;
+            }
         }
     }
 
