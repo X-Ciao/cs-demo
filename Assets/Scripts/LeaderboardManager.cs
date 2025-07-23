@@ -43,6 +43,6 @@ public class LeaderboardManager : MonoBehaviour
     // 返回主菜单按钮调用
     public void BackToMainMenu()
     {
-        SceneManager.LoadSceneAsync(0); // 替换为你的主菜单场景名
+        SceneManager.LoadSceneAsync(0); 
     }
 }

@@ -12,8 +12,11 @@ public class PlayerControl : MonoBehaviour
     private AudioSource footPlayer;
     //是否在地面
     private bool isGround;
-   
-    
+
+    //地面检测设置
+    public LayerMask groundLayers; // 在编辑器中设置为包含所有地面的层级
+
+
     void Start()
     {
         //获取刚体组件
@@ -58,7 +61,7 @@ public class PlayerControl : MonoBehaviour
     private void OnCollisionEnter(Collision collision)
     {
         //判断是不是地面
-        if(collision.collider.tag == "Ground")
+        if(IsInLayerMask(collision.gameObject, groundLayers))
         {
             //踩在地面上
             isGround = true;
@@ -69,10 +72,16 @@ public class PlayerControl : MonoBehaviour
     private void OnCollisionExit(Collision collision)
     {
         //判断是不是地面
-        if (collision.collider.tag == "Ground")
+        if (IsInLayerMask(collision.gameObject, groundLayers))
         {
             //离开地面上
             isGround = false;
         }
+    }
+
+    // 检查游戏对象是否在指定的层级掩码中
+    private bool IsInLayerMask(GameObject obj, LayerMask layerMask)
+    {
+        return ((1 << obj.layer) & layerMask) != 0;
     }
 }

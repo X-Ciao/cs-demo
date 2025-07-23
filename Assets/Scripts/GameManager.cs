@@ -9,7 +9,7 @@ public class GameManager : MonoBehaviour
 {
     public static GameManager Instance; // 单例实例
 
-     // 游戏设置分组
+    // 游戏设置分组
     public float gameDuration = 10f; // 游戏总时长（秒）
     public int initialEnemyCount = 5; // 初始敌人数
     public GameObject enemyPrefab; // 敌人预制体
@@ -18,7 +18,6 @@ public class GameManager : MonoBehaviour
     // UI引用分组
     public TMP_Text timerText; // 计时器文本
     public TMP_Text scoreText; // 分数文本
-    //public GameObject gameOverPanel; // 游戏结束面板
 
     //结算UI元素
     public GameObject resultPanel; // 结算面板
@@ -30,8 +29,12 @@ public class GameManager : MonoBehaviour
     private float currentTime; // 当前剩余时间
     private int score; // 当前分数
     private int activeEnemies; // 当前活动敌人数
-    private bool isGameActive = true; // 游戏是否进行中
+    public bool isGameActive = true; // 游戏是否进行中
+    public bool isPaused = false; // 游戏是否暂停
 
+    //暂停菜单
+    public GameObject pauseMenu; // 暂停菜单面板
+    public string mainMenuScene = "MainMenu"; // 主菜单场景名称
 
 
 
@@ -51,7 +54,10 @@ public class GameManager : MonoBehaviour
     {
         // 单例模式初始化
         if (Instance == null)
+        {
             Instance = this;
+        }
+            
         else
             Destroy(gameObject); // 确保只有一个实例
     }
@@ -96,6 +102,15 @@ public class GameManager : MonoBehaviour
             currentTime = 0;
             GameOver();
         }
+
+        // 检测ESC键按下
+        if (Input.GetKeyDown(KeyCode.Escape))
+        {
+            TogglePause();
+        }
+
+        // 游戏暂停时不更新游戏逻辑
+        if (isPaused || !isGameActive) return;
     }
 
     // 敌人被击败时的处理
@@ -104,6 +119,7 @@ public class GameManager : MonoBehaviour
         // 增加分数
         score += value;
 
+        
         // 更新UI
         UpdateUI();
 
@@ -149,6 +165,55 @@ public class GameManager : MonoBehaviour
         scoreText.text = $"Score: {score}";
     }
 
+    // 切换暂停状态
+    public void TogglePause()
+    {
+        isPaused = !isPaused;
+
+        if (isPaused)
+        {
+            PauseGame();
+        }
+        else
+        {
+            ResumeGame();
+        }
+    }
+
+    // 暂停游戏
+    void PauseGame()
+    {
+        Time.timeScale = 0f; // 停止游戏时间
+        pauseMenu.SetActive(true); // 显示暂停菜单
+
+        // 解锁鼠标
+        Cursor.lockState = CursorLockMode.None;
+        Cursor.visible = true;
+
+    }
+
+    // 继续游戏
+    public void ResumeGame()
+    {
+        Time.timeScale = 1f; // 恢复游戏时间
+        pauseMenu.SetActive(false); // 隐藏暂停菜单
+
+        // 重新锁定鼠标
+        if (isGameActive)
+        {
+            Cursor.lockState = CursorLockMode.Locked;
+            Cursor.visible = false;
+        }
+
+    }
+
+    // 返回主菜单
+    public void ReturnToMainMenu()
+    {
+        Time.timeScale = 1f; // 确保时间恢复
+        SceneManager.LoadScene(0);
+    }
+
     // 游戏结束处理
     void GameOver()
     {
@@ -156,7 +221,6 @@ public class GameManager : MonoBehaviour
         isGameActive = false;
 
         // 隐藏游戏面板，显示结算面板
-        //gameOverPanel.SetActive(false);
         resultPanel.SetActive(true);
 
         // 显示最终得分

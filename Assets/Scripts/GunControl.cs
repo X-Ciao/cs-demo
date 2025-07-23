@@ -53,6 +53,12 @@ public class GunControl : MonoBehaviour
     
     void Update()
     {
+        //检查游戏状态
+        if (GameManager.Instance != null &&
+            (!GameManager.Instance.isGameActive || GameManager.Instance.isPaused))
+        {
+            return; // 游戏结束或暂停时直接返回
+        }
 
         //计时
         timer += Time.deltaTime;

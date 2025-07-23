@@ -6,7 +6,7 @@ using UnityEngine.UI; // UI系统
 public class EnemyControl : MonoBehaviour
 {
     // 敌人移动分组
-    public float moveSpeed = 500f; // 移动速度
+    public float moveSpeed;// 移动速度
     public float roamRange = 5f; // 巡逻范围半径
     public float chaseRange = 8f; // 追逐玩家的范围
     public float rotationSpeed = 5f; // 旋转速度
@@ -40,6 +40,9 @@ public class EnemyControl : MonoBehaviour
     //传递移动方向
     private Vector3 moveDirection;
 
+    public LayerMask obstacleLayers; // 设置障碍物层级（玩家、建筑、其他敌人）
+    public PhysicMaterial enemyPhysicMaterial; // 低摩擦力的物理材质
+
     // 敌人状态枚举
     private enum EnemyState
     {
@@ -51,6 +54,7 @@ public class EnemyControl : MonoBehaviour
 
     void Start()
     {
+        moveSpeed = 5f;
         // 查找玩家对象
         player = GameObject.FindGameObjectWithTag("Player").transform;
         // 获取组件
@@ -74,6 +78,17 @@ public class EnemyControl : MonoBehaviour
             // 保存血条初始旋转
             healthBarRotation = healthBarCanvas.transform.rotation;
         }
+
+        // 添加物理材质设置
+        if (enemyCollider != null)
+        {
+            enemyCollider.material = enemyPhysicMaterial;
+        }
+
+        // 设置刚体碰撞检测模式
+        rb.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
+
+        
     }
 
     void Update()
@@ -130,7 +145,7 @@ public class EnemyControl : MonoBehaviour
 
     void FixedUpdate()
     {
-        // 处理旋转（使用FixedUpdate保证物理稳定性）
+        // 处理旋转
         if (!isDead && (currentState == EnemyState.Chasing || Vector3.Distance(transform.position, targetPos) > 0.5f))
         {
             // 根据状态确定目标方向
@@ -148,17 +163,39 @@ public class EnemyControl : MonoBehaviour
             }
         }
 
+
+
         // 位置更新 
         if (!isDead && moveDirection != Vector3.zero)
         {
+            // 检测前方是否有障碍物
+            RaycastHit hit;
+            float rayDistance = 1.0f; // 射线长度
+            Vector3 rayOrigin = transform.position + Vector3.up * 0.5f; // 从腰部高度发射
+
+            if (Physics.Raycast(rayOrigin, moveDirection, out hit, rayDistance, obstacleLayers))
+            {
+                // 计算避让方向
+                Vector3 avoidDirection = Vector3.Cross(hit.normal, Vector3.up).normalized;
+
+                // 随机选择左右避让方向
+                if (Random.value > 0.5f)
+                {
+                    avoidDirection *= -1;
+                }
+
+                // 应用避让方向
+                moveDirection = avoidDirection;
+            }
+
 
             // 执行物理移动
             Vector3 moveOffset = moveDirection * moveSpeed * Time.fixedDeltaTime;
             rb.MovePosition(rb.position + moveOffset);
         }
 
-        Debug.DrawRay(transform.position, moveDirection * 2, Color.red);
-        Debug.Log($"实际速度: {rb.velocity.magnitude}");
+        //Debug.DrawRay(transform.position, moveDirection * 2, Color.red);
+        //Debug.Log($"实际速度: {rb.velocity.magnitude}");
     }
 
     // 更新血条UI
@@ -256,6 +293,7 @@ public class EnemyControl : MonoBehaviour
         StartCoroutine(Respawn());
     }
 
+    
     // 复活协程
     IEnumerator Respawn()
     {
@@ -271,6 +309,7 @@ public class EnemyControl : MonoBehaviour
         enemyRenderer.enabled = true;
         enemyCollider.enabled = true;
         enemyRenderer.material.color = Color.white;
+
 
         // 启用并重置血条
         if (healthBarCanvas != null)
