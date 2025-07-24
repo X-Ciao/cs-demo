@@ -31,7 +31,7 @@ public class GunControl : MonoBehaviour
     //声音播放组件
     private AudioSource gunPlayer;
     // 备用弹药
-    private int reserveAmmo = 180;
+    private int reserveAmmo = 10;
     // 换弹所需时间
     private float reloadTime = 1.5f;
     //// 弹药显示文本
@@ -143,6 +143,7 @@ public class GunControl : MonoBehaviour
         bulletCount += ammoToAdd;
         reserveAmmo -= ammoToAdd;
 
+
         // 更新弹药显示
         UpdateAmmoDisplay();
 
@@ -170,5 +171,10 @@ public class GunControl : MonoBehaviour
         }
     }
 
+    //判断子弹是否全部打完
+    public bool IsOutOfAmmo()
+    {
+        return bulletCount <= 0 && reserveAmmo <= 0;
+    }
 
 }

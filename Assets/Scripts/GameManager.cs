@@ -32,6 +32,9 @@ public class GameManager : MonoBehaviour
     public bool isGameActive = true; // 游戏是否进行中
     public bool isPaused = false; // 游戏是否暂停
 
+    // 添加玩家枪械引用
+    private GunControl playerGun;
+
     //暂停菜单
     public GameObject pauseMenu; // 暂停菜单面板
     public string mainMenuScene = "MainMenu"; // 主菜单场景名称
@@ -84,12 +87,28 @@ public class GameManager : MonoBehaviour
         // 游戏开始时锁定鼠标
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;
+
+        // 获取玩家的枪械组件
+        GameObject player = GameObject.FindGameObjectWithTag("Player");
+        if (player != null)
+        {
+            playerGun = player.GetComponentInChildren<GunControl>();
+            if (playerGun == null)
+                Debug.LogError("GunControl component not found on player!");
+        }
+        else Debug.LogError("Player object not found!");
     }
 
     void Update()
     {
         // 如果游戏结束则跳过更新
         if (!isGameActive) return;
+
+        // 子弹耗尽检测
+        if (playerGun != null && playerGun.IsOutOfAmmo())
+        {
+            GameOver();
+        }
 
         // 更新游戏时间
         currentTime -= Time.deltaTime;
@@ -217,19 +236,19 @@ public class GameManager : MonoBehaviour
     // 游戏结束处理
     void GameOver()
     {
-        // 设置游戏状态为非活动
+        //设置游戏状态为非活动
         isGameActive = false;
 
-        // 隐藏游戏面板，显示结算面板
+        //隐藏游戏面板，显示结算面板
         resultPanel.SetActive(true);
 
-        // 显示最终得分
+        //显示最终得分
         finalScoreText.text = $"Final Score: {score}";
 
-        // 清空输入框
+        //清空输入框
         nameInputField.text = "";
 
-        // === 停止游戏活动 ===
+        //停止游戏活动
         StopAllCoroutines();
         DisablePlayer();
         DisableEnemies();
@@ -366,25 +385,10 @@ public class GameManager : MonoBehaviour
             rankings = new List<RankEntry>();
         }
 
-        // 更新UI
-        ShowRankings();
+
     }
 
-    // 在UI上显示排行榜
-    void ShowRankings()
-    {
-        for (int i = 0; i < rankEntries.Length; i++)
-        {
-            if (i < rankings.Count)
-            {
-                rankEntries[i].text = $"{i + 1}. {rankings[i].playerName} - {rankings[i].score}";
-            }
-            else
-            {
-                rankEntries[i].text = $"{i + 1}. ---";
-            }
-        }
-    }
+ 
 
    
 
