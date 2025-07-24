@@ -217,6 +217,11 @@ public class GameManager : MonoBehaviour
         Time.timeScale = 1f; // 恢复游戏时间
         pauseMenu.SetActive(false); // 隐藏暂停菜单
 
+        // 重置输入状态
+        Input.ResetInputAxes();
+
+        isPaused = false;
+
         // 重新锁定鼠标
         if (isGameActive)
         {
@@ -224,6 +229,11 @@ public class GameManager : MonoBehaviour
             Cursor.visible = false;
         }
 
+        // 重置枪械状态
+        if (playerGun != null)
+        {
+            playerGun.ResetInputState();
+        }
     }
 
     // 返回主菜单

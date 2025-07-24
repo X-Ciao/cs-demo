@@ -54,7 +54,7 @@ public class EnemyControl : MonoBehaviour
 
     void Start()
     {
-        moveSpeed = 5f;
+        moveSpeed = 2f;
         // 查找玩家对象
         player = GameObject.FindGameObjectWithTag("Player").transform;
         // 获取组件

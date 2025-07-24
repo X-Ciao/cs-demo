@@ -53,6 +53,9 @@ public class GunControl : MonoBehaviour
     
     void Update()
     {
+        //计时
+        timer += Time.unscaledDeltaTime;
+
         //检查游戏状态
         if (GameManager.Instance != null &&
             (!GameManager.Instance.isGameActive || GameManager.Instance.isPaused))
@@ -60,8 +63,7 @@ public class GunControl : MonoBehaviour
             return; // 游戏结束或暂停时直接返回
         }
 
-        //计时
-        timer += Time.deltaTime;
+
 
         // 更新换弹计时器（如果正在换弹）
         if (isReloading)
@@ -94,6 +96,15 @@ public class GunControl : MonoBehaviour
         {
             TryStartReload();
         }
+
+        //Debug.Log($"TimeScale: {Time.timeScale} | Delta: {Time.deltaTime} | Unscaled: {Time.unscaledDeltaTime}");
+        //Debug.Log($"Paused: {GameManager.Instance.isPaused} | Timer: {timer} | CD: {cd}");
+    }
+
+    // 添加新的重置方法
+    public void ResetInputState()
+    {
+        timer = cd; // 确保立即可以开火
     }
 
     //射击函数
