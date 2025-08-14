@@ -1,72 +1,75 @@
 using System.Collections;
 using System.Collections.Generic;
+using Unity.Netcode;
 using UnityEngine;
 
-public class PlayerAttack : MonoBehaviour
+public class PlayerAttack : NetworkBehaviour
 {
-    //关联火焰点
-    public Transform FirePoint;
-    //关联火焰预设体
-    public GameObject FirePre;
-    //关联子弹点
-    public Transform BulletPoint;
-    //关联子弹预设体
-    public GameObject BulletPre;
 
+    public ParticleSystem bulletParticleSystem;
 
+    private ParticleSystem.EmissionModule em;
 
-    //开火间隔
-    private float cd = 0.2f;
-    //计时器
-    private float timer = 0;
+    float attackTimer = 0f;
 
-    public float bulletForce = 800f; // 子弹发射力度
-    public float bulletLifeTime = 2f; // 子弹生存时间（秒）
-
-
-
-
-    bool attacking = false;
+    public NetworkVariable<bool> attacking = new NetworkVariable<bool>(
+    false,
+    NetworkVariableReadPermission.Everyone,
+    NetworkVariableWritePermission.Owner
+    );
 
     // Start is called before the first frame update
     void Start()
     {
-
+        em = bulletParticleSystem.emission;
     }
+
+    private float FiringRate = 10f;
 
     // Update is called once per frame
     void Update()
     {
-        attacking = Input.GetMouseButton(0);
-
-        //计时
-        timer += Time.unscaledDeltaTime;
-
-        if (attacking && timer > cd)
+        if (IsOwner)
         {
-            Attack();
+            attacking.Value = Input.GetMouseButton(0);//鼠标左键输入
+
+            ////计时
+            //timer += Time.unscaledDeltaTime;
+
+            attackTimer += Time.deltaTime;
+
+            if (attacking.Value && attackTimer > 1f / FiringRate)
+            {
+                attackTimer = 0;
+
+                AttackServerRpc();//检测碰撞后扣除玩家血量
+            }
+
+            
         }
+
+        em.rateOverTime = attacking.Value ? FiringRate : 0f;
     }
 
-
-    void Attack()
+    [ServerRpc]
+    void AttackServerRpc()
     {
-        //重置计时器
-        timer = 0;
+        Ray ray = new Ray(bulletParticleSystem.transform.position, bulletParticleSystem.transform.forward);
 
-        // 实例化子弹
-        GameObject bullet = Instantiate(BulletPre, BulletPoint.position, BulletPoint.rotation);
+        float raycastLength = 100f;
 
-        // 获取子弹刚体组件
-        Rigidbody bulletRb = bullet.GetComponent<Rigidbody>();
-        if (bulletRb != null)
+        if(Physics.Raycast(ray,out RaycastHit hit, raycastLength))
         {
-            // 添加向前的力
-            bulletRb.AddForce(BulletPoint.forward * bulletForce);
+            var playerHitHealthScript = hit.collider.GetComponent<PlayerHealth>();
+
+            if (playerHitHealthScript != null)
+            {
+                float reduceHealthBy = 10f;
+
+                playerHitHealthScript.ReduceHealth(reduceHealthBy);
+            }
         }
 
-        // 设置子弹在2秒后销毁
-        Destroy(bullet, bulletLifeTime);
 
     }
 
