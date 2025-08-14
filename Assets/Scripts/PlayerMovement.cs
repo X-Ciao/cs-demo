@@ -61,7 +61,7 @@ public class PlayerMovement : NetworkBehaviour
 
         if (IsOwner)
         {
-            // 手动触发同步
+           
             NetworkObject.transform.position = transform.position;
             NetworkObject.transform.rotation = transform.rotation;
         }
@@ -118,7 +118,7 @@ public class PlayerMovement : NetworkBehaviour
     {
         if (Input.GetKeyDown(KeyCode.Space) && CharacterControllerPlayer.isGrounded) // 
         {
-            // 改用速度跳跃
+            // 速度跳跃
             float jumpForce = 5f;
             velocity.y = Mathf.Sqrt(jumpForce * -2f * Physics.gravity.y);
         }
@@ -142,12 +142,7 @@ public class PlayerMovement : NetworkBehaviour
     }
 
 
-    [ClientRpc]
-    void UpdatePositionClientRpc(Vector3 newPosition)
-    {
-        if (IsOwner) return; // 所有者不需要更新
-        transform.position = newPosition;
-    }
+ 
 
 }
 

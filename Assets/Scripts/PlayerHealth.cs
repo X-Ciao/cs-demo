@@ -31,26 +31,9 @@ public class PlayerHealth : NetworkBehaviour
 
             ReturnGameClientRpc();
 
-            //DisableAttack(); //禁用玩家射击函数
-
-            //PlayerDied();//向游戏管理器报告死亡
         }
     }
 
-    //void PlayerDied()
-    //{
-    //    if (IsOwner)
-    //    {
-    //        battleGameController.ReportPlayerDeathServerRpc();
-    //    }
-    //}
-
-    //void DisableAttack()
-    //{
-    //    PlayerAttack attackingScript = GetComponent<PlayerAttack>();
-
-    //    attackingScript.enabled = false;
-    //}
 
     [ClientRpc]
     void PlayerDiedClientRpc()

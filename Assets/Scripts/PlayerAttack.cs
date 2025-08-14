@@ -18,7 +18,7 @@ public class PlayerAttack : NetworkBehaviour
     NetworkVariableWritePermission.Owner
     );
 
-    // Start is called before the first frame update
+
     void Start()
     {
         em = bulletParticleSystem.emission;
@@ -33,8 +33,6 @@ public class PlayerAttack : NetworkBehaviour
         {
             attacking.Value = Input.GetMouseButton(0);//鼠标左键输入
 
-            ////计时
-            //timer += Time.unscaledDeltaTime;
 
             attackTimer += Time.deltaTime;
 
