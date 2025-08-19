@@ -19,17 +19,21 @@ public class PlayerMovement : NetworkBehaviour
     //音频组件
     private AudioSource footPlayer;
 
+    private NetworkVariable<Vector3> SyncedPosition = new NetworkVariable<Vector3>();
+    private NetworkVariable<Vector2> SyncedRotation = new NetworkVariable<Vector2>();
 
 
 
 
-        public override void OnNetworkSpawn()
+    public override void OnNetworkSpawn()
     {
         if (!IsOwner)
         {
             // 禁用非本地玩家的相机组件
             cameraTransform.GetComponent<AudioListener>().enabled = false;
             cameraTransform.GetComponent<Camera>().enabled = false;
+            SyncedPosition.OnValueChanged += UpdatePosition;
+            SyncedRotation.OnValueChanged += UpdateRotation;
         }
         else
         {
@@ -59,20 +63,45 @@ public class PlayerMovement : NetworkBehaviour
 
         Footfall();
 
-        if (IsOwner)
+        // 每5帧同步一次减少网络负载
+        if (Time.frameCount % 5 == 0)
         {
-           
-            NetworkObject.transform.position = transform.position;
-            NetworkObject.transform.rotation = transform.rotation;
-        }
-        SyncPositionServerRpc(transform.position);
-
-
-        if (IsOwner)
-        {
-            Debug.Log($"Owner rotation: {transform.rotation}");
+            SyncTransformServerRpc(transform.position, pitch, transform.eulerAngles.y);
         }
 
+    }
+
+    void LateUpdate()
+    {
+        if (!IsOwner)
+        {
+            // 平滑插值处理其他玩家的位置
+            transform.position = Vector3.Lerp(transform.position, SyncedPosition.Value, 10f * Time.deltaTime);
+        }
+    }
+
+    [ServerRpc]
+    void SyncTransformServerRpc(Vector3 position, float cameraPitch, float playerYaw)
+    {
+        SyncedPosition.Value = position;
+        SyncedRotation.Value = new Vector2(cameraPitch, playerYaw);
+    }
+
+    void UpdatePosition(Vector3 previous, Vector3 current)
+    {
+        // 非Owner客户端更新位置
+        if (!IsOwner) transform.position = current;
+    }
+
+    void UpdateRotation(Vector2 previous, Vector2 current)
+    {
+        if (!IsOwner)
+        {
+            // 更新玩家Y轴旋转
+            transform.eulerAngles = new Vector3(0, current.y, 0);
+            // 更新摄像机俯仰角
+            cameraTransform.localEulerAngles = new Vector3(current.x, 0, 0);
+        }
     }
 
     void MovePlayer()
@@ -135,11 +164,6 @@ public class PlayerMovement : NetworkBehaviour
     }
 
 
-    [ServerRpc]
-    void SyncPositionServerRpc(Vector3 newPosition)
-    {
-        transform.position = newPosition;
-    }
 
 
  
