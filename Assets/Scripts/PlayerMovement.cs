@@ -5,48 +5,77 @@ using Unity.Netcode;
 
 public class PlayerMovement : NetworkBehaviour
 {
-    CharacterController CharacterControllerPlayer;
+    
 
-    float Speed = 3f;
+    [Header("Movement Settings")]
+    public float Speed = 3f;
+    public float Sensitivity = 3f;
+    public float MinPitch = -45f;
+    public float MaxPitch = 45f;
+    public float InterpolationSpeed = 15f;
+    public float JumpForce = 5f;
 
-    float pitch = 0f;
+    // 组件引用
+    private CharacterController CharacterControllerPlayer;
+    private Transform cameraTransform;
+    private AudioSource footPlayer;
 
-    public Transform cameraTransform;
+    // 旋转状态
+    private float currentPitch = 0f;
+    private float currentYaw = 0f;
+    private float targetYaw = 0f;
+
+
 
     private float gravity = -9.81f;
     private Vector3 velocity;
 
-    //音频组件
-    private AudioSource footPlayer;
+    
 
     private NetworkVariable<Vector3> SyncedPosition = new NetworkVariable<Vector3>();
     private NetworkVariable<Vector2> SyncedRotation = new NetworkVariable<Vector2>();
 
-
+    // 同步计时器
+    private float syncTimer;
+    private const float SYNC_INTERVAL = 0.1f; // 每秒10次同步
 
 
     public override void OnNetworkSpawn()
     {
+        cameraTransform = GetComponentInChildren<Camera>().transform;
+
         if (!IsOwner)
         {
             // 禁用非本地玩家的相机组件
             cameraTransform.GetComponent<AudioListener>().enabled = false;
             cameraTransform.GetComponent<Camera>().enabled = false;
+            // 注册同步回调
             SyncedPosition.OnValueChanged += UpdatePosition;
             SyncedRotation.OnValueChanged += UpdateRotation;
         }
         else
         {
-            // 仅本地玩家初始化控制器
+            // 初始化本地玩家组件
             CharacterControllerPlayer = GetComponent<CharacterController>();
             footPlayer = GetComponent<AudioSource>();
 
-            // 确保本地玩家启用相机
+            // 启用本地玩家的摄像头和音频监听器
             cameraTransform.GetComponent<Camera>().enabled = true;
             cameraTransform.GetComponent<AudioListener>().enabled = true;
-            Cursor.lockState = CursorLockMode.Locked;
-        }
 
+            // 锁定鼠标
+            Cursor.lockState = CursorLockMode.Locked;
+            Cursor.visible = false;
+
+            // 初始化旋转值
+            currentYaw = transform.eulerAngles.y;
+            targetYaw = currentYaw;
+        }
+        if (IsServer) // 服务器设置初始同步值
+        {
+            SyncedPosition.Value = transform.position;
+            SyncedRotation.Value = new Vector2(0, transform.eulerAngles.y); // 假设初始俯仰角为0
+        }
 
     }
 
@@ -63,10 +92,12 @@ public class PlayerMovement : NetworkBehaviour
 
         Footfall();
 
-        // 每5帧同步一次减少网络负载
-        if (Time.frameCount % 5 == 0)
+        // 定时同步
+        syncTimer += Time.deltaTime;
+        if (syncTimer >= SYNC_INTERVAL)
         {
-            SyncTransformServerRpc(transform.position, pitch, transform.eulerAngles.y);
+            SyncTransformServerRpc(transform.position, currentPitch, currentYaw);
+            syncTimer = 0;
         }
 
     }
@@ -75,8 +106,19 @@ public class PlayerMovement : NetworkBehaviour
     {
         if (!IsOwner)
         {
-            // 平滑插值处理其他玩家的位置
-            transform.position = Vector3.Lerp(transform.position, SyncedPosition.Value, 10f * Time.deltaTime);
+            // 平滑位置插值
+            transform.position = Vector3.Lerp(
+                transform.position, 
+                SyncedPosition.Value, 
+                InterpolationSpeed * Time.deltaTime
+            );
+            
+            // 平滑旋转插值
+            transform.rotation = Quaternion.Slerp(
+                transform.rotation, 
+                Quaternion.Euler(0, targetYaw, 0), 
+                InterpolationSpeed * Time.deltaTime
+            );
         }
     }
 
@@ -89,58 +131,66 @@ public class PlayerMovement : NetworkBehaviour
 
     void UpdatePosition(Vector3 previous, Vector3 current)
     {
-        // 非Owner客户端更新位置
-        if (!IsOwner) transform.position = current;
+
     }
 
     void UpdateRotation(Vector2 previous, Vector2 current)
     {
         if (!IsOwner)
         {
-            // 更新玩家Y轴旋转
-            transform.eulerAngles = new Vector3(0, current.y, 0);
-            // 更新摄像机俯仰角
+            // 更新目标旋转值
+            targetYaw = current.y;
+
+            // 直接设置相机俯仰
             cameraTransform.localEulerAngles = new Vector3(current.x, 0, 0);
         }
     }
 
     void MovePlayer()
     {
+         // 地面检测和重力重置
         if (CharacterControllerPlayer.isGrounded && velocity.y < 0)
-            velocity.y = -2f; // 轻微下压确保贴地
+        {
+            velocity.y = -2f;
+        }
+        else
+        {
+            // 应用重力
+            velocity.y += gravity * Time.deltaTime;
+        }
 
-
-        Vector3 move = new Vector3(Input.GetAxis("Horizontal"), 0, Input.GetAxis("Vertical"));
-
+        // 获取输入
+        Vector3 move = new Vector3(
+            Input.GetAxis("Horizontal"), 
+            0, 
+            Input.GetAxis("Vertical")
+        );
+        
+        // 限制移动向量长度
         move = Vector3.ClampMagnitude(move, 1f);
-
+        
+        // 转换为世界空间方向
         move = transform.TransformDirection(move);
-
-        CharacterControllerPlayer.SimpleMove(move * Speed);
-
-        // 应用重力
-        velocity.y += gravity * Time.deltaTime;
-        CharacterControllerPlayer.Move((move + velocity) * Time.deltaTime);
+        
+        // 应用移动
+        CharacterControllerPlayer.Move((move * Speed + velocity) * Time.deltaTime);
     }
 
-    float Sensitivity = 3f;
-
-    float MinPitch = -45f;
-
-    float MaxPitch = 45f;
+   
 
     void Look()
     {
 
+        // 处理水平旋转
         float mouseX = Input.GetAxis("Mouse X") * Sensitivity;
+        currentYaw += mouseX;
+        transform.rotation = Quaternion.Euler(0, currentYaw, 0);
 
-        transform.Rotate(0, mouseX, 0);
-
-        pitch -= Input.GetAxis("Mouse Y") * Sensitivity;
-
-        pitch = Mathf.Clamp(pitch, MinPitch, MaxPitch);
-
-        cameraTransform.localRotation = Quaternion.Euler(pitch, 0, 0);
+        // 处理俯仰旋转
+        float mouseY = Input.GetAxis("Mouse Y") * Sensitivity;
+        currentPitch -= mouseY;
+        currentPitch = Mathf.Clamp(currentPitch, MinPitch, MaxPitch);
+        cameraTransform.localRotation = Quaternion.Euler(currentPitch, 0, 0);
     }
 
     void Jump()
