@@ -13,7 +13,7 @@ public class PlayerMovement : NetworkBehaviour
     public float MinPitch = -45f;
     public float MaxPitch = 45f;
     public float InterpolationSpeed = 15f;
-    public float JumpForce = 5f;
+    public float JumpForce = 2f;
 
     // 组件引用
     private CharacterController CharacterControllerPlayer;
@@ -39,6 +39,9 @@ public class PlayerMovement : NetworkBehaviour
     private float syncTimer;
     private const float SYNC_INTERVAL = 0.1f; // 每秒10次同步
 
+    // 自定义生成点变量
+    public Vector3 CustomSpawnPosition = new Vector3(48 ,1 ,62); 
+    public float CustomYawRotation = 0f; 
 
     public override void OnNetworkSpawn()
     {
@@ -73,8 +76,13 @@ public class PlayerMovement : NetworkBehaviour
         }
         if (IsServer) // 服务器设置初始同步值
         {
-            SyncedPosition.Value = transform.position;
-            SyncedRotation.Value = new Vector2(0, transform.eulerAngles.y); // 假设初始俯仰角为0
+            // 自定义位置
+            transform.position = CustomSpawnPosition;
+            transform.rotation = Quaternion.Euler(0, CustomYawRotation, 0);
+
+            // 同步自定义位置和旋转
+            SyncedPosition.Value = CustomSpawnPosition;
+            SyncedRotation.Value = new Vector2(0, CustomYawRotation);
         }
 
     }
@@ -198,8 +206,8 @@ public class PlayerMovement : NetworkBehaviour
         if (Input.GetKeyDown(KeyCode.Space) && CharacterControllerPlayer.isGrounded) // 
         {
             // 速度跳跃
-            float jumpForce = 5f;
-            velocity.y = Mathf.Sqrt(jumpForce * -2f * Physics.gravity.y);
+            
+            velocity.y = Mathf.Sqrt(JumpForce * -2f * Physics.gravity.y);
         }
     }
 

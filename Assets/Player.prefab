@@ -12,7 +12,6 @@ GameObject:
   - component: {fileID: 5044519446728312676}
   - component: {fileID: 7911249333200566201}
   - component: {fileID: 5746591394392593116}
-  - component: {fileID: 1949420065996812316}
   m_Layer: 7
   m_Name: Head
   m_TagString: MainCamera
@@ -105,37 +104,6 @@ Skybox:
   m_GameObject: {fileID: 2912996997392104844}
   m_Enabled: 1
   m_CustomSkybox: {fileID: 10304, guid: 0000000000000000f000000000000000, type: 0}
---- !u!114 &1949420065996812316
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2912996997392104844}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e96cb6065543e43c4a752faaa1468eb1, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  UseUnreliableDeltas: 0
-  SyncPositionX: 1
-  SyncPositionY: 1
-  SyncPositionZ: 1
-  SyncRotAngleX: 1
-  SyncRotAngleY: 1
-  SyncRotAngleZ: 1
-  SyncScaleX: 1
-  SyncScaleY: 1
-  SyncScaleZ: 1
-  PositionThreshold: 0.001
-  RotAngleThreshold: 0.01
-  ScaleThreshold: 0.01
-  UseQuaternionSynchronization: 0
-  UseQuaternionCompression: 0
-  UseHalfFloatPrecision: 0
-  InLocalSpace: 0
-  Interpolate: 1
-  SlerpPosition: 0
 --- !u!1 &5174004881155091970
 GameObject:
   m_ObjectHideFlags: 0
@@ -154,7 +122,6 @@ GameObject:
   - component: {fileID: 841287162707450203}
   - component: {fileID: 4488628785978851634}
   - component: {fileID: 9157632114738409027}
-  - component: {fileID: 4945973941212787342}
   m_Layer: 7
   m_Name: Player
   m_TagString: Player
@@ -380,7 +347,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a65df6b7bcd49954d845bb134fd5f6a4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  cameraTransform: {fileID: 6206504579248828317}
+  Speed: 3
+  Sensitivity: 3
+  MinPitch: -45
+  MaxPitch: 45
+  InterpolationSpeed: 15
+  JumpForce: 2
 --- !u!143 &841287162707450203
 CharacterController:
   m_ObjectHideFlags: 0
@@ -438,37 +410,6 @@ MonoBehaviour:
     m_InternalValue: 100
   DiedNumber:
     m_InternalValue: 0
---- !u!114 &4945973941212787342
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5174004881155091970}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e96cb6065543e43c4a752faaa1468eb1, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  UseUnreliableDeltas: 0
-  SyncPositionX: 1
-  SyncPositionY: 1
-  SyncPositionZ: 1
-  SyncRotAngleX: 1
-  SyncRotAngleY: 1
-  SyncRotAngleZ: 1
-  SyncScaleX: 1
-  SyncScaleY: 1
-  SyncScaleZ: 1
-  PositionThreshold: 0.001
-  RotAngleThreshold: 0.01
-  ScaleThreshold: 0.01
-  UseQuaternionSynchronization: 0
-  UseQuaternionCompression: 0
-  UseHalfFloatPrecision: 0
-  InLocalSpace: 0
-  Interpolate: 1
-  SlerpPosition: 0
 --- !u!1 &8022405946204614916
 GameObject:
   m_ObjectHideFlags: 0

@@ -29,7 +29,7 @@ public class PlayerHealth : NetworkBehaviour
         {
             PlayerDiedClientRpc();//使玩家预设体隐身
 
-            ReturnGameClientRpc();
+            RequestReturnGame();
 
         }
     }
@@ -52,21 +52,58 @@ public class PlayerHealth : NetworkBehaviour
 );
 
 
-    [ClientRpc]
-    public void ReturnGameClientRpc()
+    private void RequestReturnGame()
     {
+        // 客户端向服务器发送增加死亡计数的请求
+        IncreaseDiedCountServerRpc();
+    }
+
+    [ServerRpc(RequireOwnership = false)]
+    private void IncreaseDiedCountServerRpc()
+    {
+        // 服务器安全地修改死亡计数
         DiedNumber.Value++;
 
-        int NumberOfPlayers = 2;
+        // 在服务器端检查游戏结束条件
+        CheckGameEnd();
+    }
+
+    private void CheckGameEnd()
+    {
+        int NumberOfPlayers = 2; // 应改为动态获取玩家数
+
         if (DiedNumber.Value >= NumberOfPlayers - 1)
         {
-            NetworkManager.Singleton.Shutdown();
-            SceneManager.LoadScene(SceneManager.GetActiveScene().name);
-            // 解锁鼠标用于UI操作
-            Cursor.lockState = CursorLockMode.None;
-            Cursor.visible = true;
+            // 通知所有客户端重启游戏
+            RestartGameClientRpc();
         }
+    }
+
+    [ClientRpc]
+    private void RestartGameClientRpc()
+    {
+        StartCoroutine(RestartGameCoroutine());
+    }
+
+    private IEnumerator RestartGameCoroutine()
+    {
+        // 重置光标
+        Cursor.lockState = CursorLockMode.None;
+        Cursor.visible = true;
+
+        // 关闭网络连接
+        if (NetworkManager.Singleton != null)
+        {
+            NetworkManager.Singleton.Shutdown();
+            yield return new WaitUntil(() => !NetworkManager.Singleton.IsListening);
+        }
+
+        // 重新加载场景
+        SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+
        
     }
 
 }
+
+

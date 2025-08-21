@@ -8,16 +8,14 @@ public class BattleGameController : NetworkBehaviour
 {
     int MinimumPlayers = 2;
 
-    public GameObject OverPanel; // 结算面板
+
 
 
 
 
     public void Start()
     {
-        //隐藏结算界面
-        if (OverPanel != null)
-            OverPanel.SetActive(false);
+        
     }
 
     void Update()

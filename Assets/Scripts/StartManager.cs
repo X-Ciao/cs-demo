@@ -6,6 +6,13 @@ using UnityEngine.SceneManagement;
 
 public class StartManager : MonoBehaviour
 {
+    void Start()
+    {
+        // 确保场景加载后鼠标解锁
+        Cursor.lockState = CursorLockMode.None;
+        Cursor.visible = true;
+    }
+
     void OnGUI()
     {
         GUILayout.BeginArea(new Rect(10, 10, 300, 300));
